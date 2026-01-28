@@ -33,6 +33,7 @@ public class RobotContainer {
     // Creates a SlewRateLimiter that limits the rate of change of the signal to 0.8 units per second
     SlewRateLimiter filter1 = new SlewRateLimiter(0.8);
     SlewRateLimiter filter2 = new SlewRateLimiter(0.8);
+    
     SlewRateLimiter filter3 = new SlewRateLimiter(0.8);
 
     /* Setting up bindings for necessary control of the swerve drive platform */
