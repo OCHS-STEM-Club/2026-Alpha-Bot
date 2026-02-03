@@ -6,6 +6,7 @@ import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.VecBuilder;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N3;
+import edu.wpi.first.wpilibj.DriverStation;
 import frc.robot.LimelightHelpers;
 import frc.robot.LimelightHelpers.PoseEstimate;
 
@@ -13,12 +14,13 @@ public class Vision {
     private CommandSwerveDrivetrain m_swerveSubsystem;
     private String m_limeLightName;
 
+
     // MegaTag 1 Std Devs - shouldnt change too much based on the year
     public static final Matrix<N3, N1> kSingleTagStdDevsMT1 = VecBuilder.fill(Double.MAX_VALUE, Double.MAX_VALUE, 4);
     public static final Matrix<N3, N1> kMultiTagStdDevsMT1 = VecBuilder.fill(Double.MAX_VALUE, Double.MAX_VALUE, 3);
 
     //will need to change based on year
-    public static final Matrix<N3, N1> kReefStdDevs = VecBuilder.fill(0.01, 0.01, Double.MAX_VALUE);
+    public static final Matrix<N3, N1> kMT2StdDevs = VecBuilder.fill(0.01, 0.01, Double.MAX_VALUE);
 
     public Vision(CommandSwerveDrivetrain swerveSubsystem, String limeLightName) {
         m_swerveSubsystem = swerveSubsystem;
@@ -37,7 +39,7 @@ public class Vision {
             mt1ValidPose = false;
           }
     
-          DogLog.log("Subsystems/VisionSubsystem/MegaTag1/Pose2D", mt1Result.pose);
+          DogLog.log("Subsystems/Vision/" + m_limeLightName + "MegaTag1/Pose2D", mt1Result.pose);
     
           if (mt1ValidPose) {
             m_swerveSubsystem.addVisionMeasurement(mt1Result.pose, mt1Result.timestampSeconds, getMegaTag1StdDevs(mt1Result));
@@ -51,13 +53,25 @@ public class Vision {
         LimelightHelpers.SetRobotOrientation(m_limeLightName, m_swerveSubsystem.getState().Pose.getRotation().getDegrees(), 0, 0, 0, 0, 0);
     
         LimelightHelpers.PoseEstimate mt2Result = LimelightHelpers.getBotPoseEstimate_wpiBlue_MegaTag2(m_limeLightName);
+
+        if (DriverStation.isDisabled()) {
+          LimelightHelpers.SetIMUMode(m_limeLightName, 1); // Seed internal IMU
+        }else{
+          LimelightHelpers.SetIMUMode(m_limeLightName, 4); // Use internal IMU + external IMU
+        }
+
+  
+
+
+
+        //LimelightHelpers.getIMUData(m_limeLightName);
     
         if(mt2Result != null) {
           if (mt2Result.tagCount == 0 || Math.abs(m_swerveSubsystem.getState().Speeds.omegaRadiansPerSecond) > (4 * Math.PI )) {
             mt2ValidPose = false;
           }
     
-          DogLog.log("Subsystems/VisionSubsystem/MegaTag2/Pose2D", mt2Result.pose);
+          DogLog.log("Subsystems/Vision/" + m_limeLightName + "MegaTag2/Pose2D", mt2Result.pose);
     
           if (mt2ValidPose) {
             m_swerveSubsystem.addVisionMeasurement(mt2Result.pose, mt2Result.timestampSeconds, getEstimationStdDevsLimelightMT2(mt2Result));
@@ -103,9 +117,9 @@ public class Vision {
     estStdDevs.times((1 + avgAmbiguity) * 5);
 
     // Log the values
-    DogLog.log("Subsystems/VisionSubsystem/MegaTag1/Average Ambiguity", avgAmbiguity);
-    DogLog.log("Subsystems/VisionSubsystem/MegaTag1/Num Tags", numTags);
-    DogLog.log("Subsystems/VisionSubsystem/MegaTag1/Average Distance", avgDist);
+    DogLog.log("Subsystems/Vision/" + m_limeLightName + "MegaTag1/Average Ambiguity", avgAmbiguity);
+    DogLog.log("Subsystems/Vision/" + m_limeLightName + "MegaTag1/Num Tags", numTags);
+    DogLog.log("Subsystems/Vision/" + m_limeLightName + "MegaTag1/Average Distance", avgDist);
 
     // If the average distance is too far, return very high std devs to ignore the pose
     if (numTags == 1 && avgDist > 1.5) {
@@ -118,7 +132,7 @@ public class Vision {
   }
 
   public static Matrix<N3, N1> getEstimationStdDevsLimelightMT2(PoseEstimate poseEstimate) {
-    var estStdDevs = kReefStdDevs;
+    var estStdDevs = kMT2StdDevs;
     
     int numTags = 0;
     double avgDist = 0;
@@ -135,7 +149,7 @@ public class Vision {
 
     // Decrease std devs if multiple targets are visible
     if (numTags > 1) {
-        estStdDevs.times(0.7);
+        estStdDevs.times(0.65);
     }
 
     // Increase std devs based on (average) distance
