@@ -8,6 +8,7 @@ import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N3;
 import edu.wpi.first.wpilibj.DriverStation;
 import frc.robot.LimelightHelpers;
+import frc.robot.LimelightHelpers.IMUResults;
 import frc.robot.LimelightHelpers.PoseEstimate;
 
 public class Vision {
@@ -54,11 +55,14 @@ public class Vision {
     
         LimelightHelpers.PoseEstimate mt2Result = LimelightHelpers.getBotPoseEstimate_wpiBlue_MegaTag2(m_limeLightName);
 
-        if (DriverStation.isDisabled()) {
-          LimelightHelpers.SetIMUMode(m_limeLightName, 1); // Seed internal IMU
-        }else{
-          LimelightHelpers.SetIMUMode(m_limeLightName, 4); // Use internal IMU + external IMU
-        }
+        // if (DriverStation.isDisabled()) {
+        //   LimelightHelpers.SetIMUMode(m_limeLightName, 1); // Seed internal IMU
+        // }else{
+        //   LimelightHelpers.SetIMUAssistAlpha(m_limeLightName, 0.01);//Set the complementary filter alpha (optional, default is 0.001)
+        //   //Lower values (e.g., 0.001): Smoother, slower drift correction. The internal IMU is trusted more. Higher values (e.g., 0.01): Faster tracking of the reference source (MT1 or external IMU).
+        //   LimelightHelpers.SetIMUMode(m_limeLightName, 4); // Use internal IMU + external IMU
+           
+        // }
 
   
 
@@ -149,7 +153,7 @@ public class Vision {
 
     // Decrease std devs if multiple targets are visible
     if (numTags > 1) {
-        estStdDevs.times(0.65);
+        estStdDevs.times(0.25); //0.65
     }
 
     // Increase std devs based on (average) distance
