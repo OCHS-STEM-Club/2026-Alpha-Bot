@@ -16,6 +16,7 @@ import com.pathplanner.lib.config.PIDConstants;
 import com.pathplanner.lib.config.RobotConfig;
 import com.pathplanner.lib.controllers.PPHolonomicDriveController;
 
+import dev.doglog.DogLog;
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
@@ -31,6 +32,7 @@ import edu.wpi.first.wpilibj2.command.Subsystem;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
 
 import frc.robot.generated.TunerConstants.TunerSwerveDrivetrain;
+import frc.robot.subsystems.Vision.Vision;
 
 /**
  * Class that extends the Phoenix 6 SwerveDrivetrain class and implements
@@ -51,7 +53,7 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
     /* Keep track if we've ever applied the operator perspective before or not */
     private boolean m_hasAppliedOperatorPerspective = false;
 
-    private Vision vision = new Vision(this, "limelight-front");
+    private Vision vision = new Vision(this, "limelight-left");
 
     /** Swerve request to apply during robot-centric path following */
     private final SwerveRequest.ApplyRobotSpeeds m_pathApplyRobotSpeeds = new SwerveRequest.ApplyRobotSpeeds();
@@ -285,6 +287,8 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
 
         vision.setUpLimeLightMegaTag1();
         vision.setUpLimeLightMegaTag2();
+
+        DogLog.log("Subsystem/Drive/Pose2d", getState().Pose);
     }
 
     private void startSimThread() {
