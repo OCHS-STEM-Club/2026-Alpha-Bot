@@ -301,7 +301,6 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
             LimelightHelpers.SetIMUMode("limelight-front", 1);
             LimelightHelpers.SetIMUMode("limelight-left", 1);
         }else if (DriverStation.isEnabled()) {
-            // LimelightHelpers.SetIMUAssistAlpha("limelight-front", 0.01);
             LimelightHelpers.SetIMUAssistAlpha("limelight-left", 0.001);
             LimelightHelpers.SetIMUMode("limelight-left", 4);
         }

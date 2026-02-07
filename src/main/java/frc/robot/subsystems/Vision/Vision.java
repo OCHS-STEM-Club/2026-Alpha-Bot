@@ -77,13 +77,14 @@ public class Vision {
      * Also includes general checks for validity, latency, robot motion, and field boundaries.
      */
     private boolean shouldRejectPose(PoseEstimate poseEstimate, boolean isMT2) {
-        String tagType = isMT2 ? "MT2" : "MT1";
 
         boolean rejectPose = 
                   !LimelightHelpers.validPoseEstimate(poseEstimate)
                 || poseEstimate.tagCount == 0
                 || Math.abs(m_swerveSubsystem.getPigeon2().getAngularVelocityZWorld().getValueAsDouble()) > 50 // degrees per second - reject if spinning too fast
                 // || poseEstimate.latency > VisionConstants.kMaxLatency
+
+                || getAmbiguity(poseEstimate) > VisionConstants.kMaxAmbiguity
 
                 || Math.abs(m_swerveSubsystem.getPigeon2().getPitch().getValueAsDouble()) > 10 // degrees - reject if over bump
                 || Math.abs(m_swerveSubsystem.getPigeon2().getRoll().getValueAsDouble()) > 10 // degrees - reject if tilted too much
@@ -93,30 +94,6 @@ public class Vision {
                 || poseEstimate.pose.getY() < 0.0
                 || poseEstimate.pose.getY() > VisionConstants.aprilTagLayout.getFieldWidth();
 
-        if (!rejectPose) {
-            for (var estimate : poseEstimate.rawFiducials) {
-                if (isMT2) {
-                    if (poseEstimate.tagCount == 1 && estimate.ambiguity > VisionConstants.kMaxAmbiguity) {
-                        rejectPose = true;
-                        break;
-                    }
-                } else {
-                    if (poseEstimate.tagCount < 2) {
-                        rejectPose = true;
-                        break;
-                    } else if (getAmbiguity(poseEstimate) > VisionConstants.kMaxAmbiguity) {
-                        // Reject only if average ambiguity is too high
-                        rejectPose = true;
-                        break;
-                    }
-                }
-
-                DogLog.log("Subsystems/Vision/" + m_limeLightName + "/" + tagType + "/Rejection Factors/Ambiguity", getAmbiguity(poseEstimate));
-                DogLog.log("Subsystems/Vision/" + m_limeLightName + "/" + tagType + "/Rejection Factors/Latency", poseEstimate.latency);
-                DogLog.log("Subsystems/Vision/" + m_limeLightName + "/" + tagType + "/Rejection Factors/Pitch", m_swerveSubsystem.getPigeon2().getPitch().getValueAsDouble());
-                DogLog.log("Subsystems/Vision/" + m_limeLightName + "/" + tagType + "/Rejection Factors/Roll", m_swerveSubsystem.getPigeon2().getRoll().getValueAsDouble());
-            }
-        }
         return rejectPose;
     }
 
