@@ -1,167 +1,180 @@
+// Copyright (c) 2021-2026 Littleton Robotics
+// http://github.com/Mechanical-Advantage
+//
+// Use of this source code is governed by a BSD
+// license that can be found in the LICENSE file
+// at the root directory of this project.
+
 package frc.robot.subsystems.Vision;
 
-import dev.doglog.DogLog;
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.VecBuilder;
 import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.geometry.Pose3d;
+import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N3;
-import edu.wpi.first.wpilibj.DriverStation;
-import frc.robot.LimelightHelpers;
-import frc.robot.LimelightHelpers.PoseEstimate;
-import frc.robot.subsystems.Drive.CommandSwerveDrivetrain;
+import edu.wpi.first.wpilibj.Alert;
+import edu.wpi.first.wpilibj.Alert.AlertType;
+import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import frc.robot.subsystems.Vision.VisionIO.PoseObservationType;
+import frc.robot.subsystems.Vision.VisionIOInputsAutoLogged;
 
-public class Vision {
-    private CommandSwerveDrivetrain m_swerveSubsystem;
-    private String m_limeLightName;
+import static frc.robot.subsystems.Vision.VisionConstants.*;
 
-    public Vision(CommandSwerveDrivetrain swerveSubsystem, String limeLightName) {
-        m_swerveSubsystem = swerveSubsystem;
-        m_limeLightName = limeLightName;
+import java.util.LinkedList;
+import java.util.List;
+import org.littletonrobotics.junction.Logger;
+
+public class Vision extends SubsystemBase {
+  private final VisionConsumer consumer;
+  private final VisionIO[] io;
+  private final VisionIOInputsAutoLogged[] inputs;
+  private final Alert[] disconnectedAlerts;
+
+  public Vision(VisionConsumer consumer, VisionIO... io) {
+    this.consumer = consumer;
+    this.io = io;
+
+    // Initialize inputs
+    this.inputs = new VisionIOInputsAutoLogged[io.length];
+    for (int i = 0; i < inputs.length; i++) {
+      inputs[i] = new VisionIOInputsAutoLogged();
     }
 
-    /**
-     * Process MegaTag1 vision updates and add valid measurements to the drivetrain.
-     * MT1 requires at least 2 tags for pose estimation.
-     */
-    public void updateMegaTag1() {
-        PoseEstimate mt1Result = LimelightHelpers.getBotPoseEstimate_wpiBlue(m_limeLightName);
+    // Initialize disconnected alerts
+    this.disconnectedAlerts = new Alert[io.length];
+    for (int i = 0; i < inputs.length; i++) {
+      disconnectedAlerts[i] =
+          new Alert(
+              "Vision camera " + Integer.toString(i) + " is disconnected.", AlertType.kWarning);
+    }
+  }
 
-        if (shouldRejectPose(mt1Result, false)) {
-            return;
+  /**
+   * Returns the X angle to the best target, which can be used for simple servoing with vision.
+   *
+   * @param cameraIndex The index of the camera to use.
+   */
+  public Rotation2d getTargetX(int cameraIndex) {
+    return inputs[cameraIndex].latestTargetObservation.tx();
+  }
+
+  @Override
+  public void periodic() {
+    for (int i = 0; i < io.length; i++) {
+      io[i].updateInputs(inputs[i]);
+      Logger.processInputs("Vision/Camera" + Integer.toString(i), inputs[i]);
+    }
+
+    // Initialize logging values
+    List<Pose3d> allTagPoses = new LinkedList<>();
+    List<Pose3d> allRobotPoses = new LinkedList<>();
+    List<Pose3d> allRobotPosesAccepted = new LinkedList<>();
+    List<Pose3d> allRobotPosesRejected = new LinkedList<>();
+
+    // Loop over cameras
+    for (int cameraIndex = 0; cameraIndex < io.length; cameraIndex++) {
+      // Update disconnected alert
+      disconnectedAlerts[cameraIndex].set(!inputs[cameraIndex].connected);
+
+      // Initialize logging values
+      List<Pose3d> tagPoses = new LinkedList<>();
+      List<Pose3d> robotPoses = new LinkedList<>();
+      List<Pose3d> robotPosesAccepted = new LinkedList<>();
+      List<Pose3d> robotPosesRejected = new LinkedList<>();
+
+      // Add tag poses
+      for (int tagId : inputs[cameraIndex].tagIds) {
+        var tagPose = aprilTagLayout.getTagPose(tagId);
+        if (tagPose.isPresent()) {
+          tagPoses.add(tagPose.get());
+        }
+      }
+
+      // Loop over pose observations
+      for (var observation : inputs[cameraIndex].poseObservations) {
+        // Check whether to reject pose
+        boolean rejectPose =
+            observation.tagCount() == 0 // Must have at least one tag
+                || (observation.tagCount() == 1
+                    && observation.ambiguity() > maxAmbiguity) // Cannot be high ambiguity
+                || Math.abs(observation.pose().getZ())
+                    > maxZError // Must have realistic Z coordinate
+
+                // Must be within the field boundaries
+                || observation.pose().getX() < 0.0
+                || observation.pose().getX() > aprilTagLayout.getFieldLength()
+                || observation.pose().getY() < 0.0
+                || observation.pose().getY() > aprilTagLayout.getFieldWidth();
+
+        // Add pose to log
+        robotPoses.add(observation.pose());
+        if (rejectPose) {
+          robotPosesRejected.add(observation.pose());
+        } else {
+          robotPosesAccepted.add(observation.pose());
         }
 
-        DogLog.log("Subsystems/Vision/" + m_limeLightName + "/MT1/Raw Vision Estimate", mt1Result.pose);
-        m_swerveSubsystem.addVisionMeasurement(
-            mt1Result.pose,
-            mt1Result.timestampSeconds,
-            getMegaTag1StdDevs(mt1Result)
-        );
-    }
-
-    /**
-     * Process MegaTag2 vision updates and add valid measurements to the drivetrain.
-     * MT2 uses robot orientation from the gyro for more accurate pose estimation.
-     */
-    public void updateMegaTag2() {
-
-        LimelightHelpers.SetRobotOrientation(
-            m_limeLightName,
-            m_swerveSubsystem.getState().Pose.getRotation().getDegrees(),
-            m_swerveSubsystem.getPigeon2().getAngularVelocityZWorld().getValueAsDouble(),
-            m_swerveSubsystem.getPigeon2().getPitch().getValueAsDouble(),
-            0,
-            m_swerveSubsystem.getPigeon2().getRoll().getValueAsDouble(),
-            0
-        );
-
-        PoseEstimate mt2Result = LimelightHelpers.getBotPoseEstimate_wpiBlue_MegaTag2(m_limeLightName);
-
-        if (shouldRejectPose(mt2Result, true)) {
-            return;
+        // Skip if rejected
+        if (rejectPose) {
+          continue;
         }
 
-        DogLog.log("Subsystems/Vision/" + m_limeLightName + "/MT2/Raw Vision Estimate", mt2Result.pose);
-        m_swerveSubsystem.addVisionMeasurement(
-            mt2Result.pose,
-            mt2Result.timestampSeconds,
-            calculateStdDevsMT2(mt2Result, mt2Result.pose)
-        );
-    }
-
-
-    /**
-     * Determine if a pose estimate should be rejected based on validity criteria.
-     * For MegaTag 1: Reject if less than 2 tags or if any tag has high ambiguity.
-     * For MegaTag 2: Reject if single tag has high ambiguity.
-     * Also includes general checks for validity, latency, robot motion, and field boundaries.
-     */
-    private boolean shouldRejectPose(PoseEstimate poseEstimate, boolean isMT2) {
-
-        boolean rejectPose = 
-                  !LimelightHelpers.validPoseEstimate(poseEstimate)
-                || poseEstimate.tagCount == 0
-                || Math.abs(m_swerveSubsystem.getPigeon2().getAngularVelocityZWorld().getValueAsDouble()) > 50 // degrees per second - reject if spinning too fast
-                // || poseEstimate.latency > VisionConstants.kMaxLatency
-
-                || getAmbiguity(poseEstimate) > VisionConstants.kMaxAmbiguity
-
-                || Math.abs(m_swerveSubsystem.getPigeon2().getPitch().getValueAsDouble()) > 10 // degrees - reject if over bump
-                || Math.abs(m_swerveSubsystem.getPigeon2().getRoll().getValueAsDouble()) > 10 // degrees - reject if tilted too much
-
-                || poseEstimate.pose.getX() < 0.0
-                || poseEstimate.pose.getX() > VisionConstants.aprilTagLayout.getFieldLength()
-                || poseEstimate.pose.getY() < 0.0
-                || poseEstimate.pose.getY() > VisionConstants.aprilTagLayout.getFieldWidth();
-
-        return rejectPose;
-    }
-
-    // /**
-    //  * Calculate the standard deviations for the MegaTag1 pose estimation based on number of tags, average distance and average ambiguity.
-    //  * Poses are already filtered by pose rejection, so this only scales std devs for accepted poses.
-    //  */
-    // public Matrix<N3, N1> getMegaTag1StdDevs(PoseEstimate poseEstimate) {
-
-    //     double avgDist = poseEstimate.avgTagDist;
-    //     double avgAmbiguity = getAmbiguity(poseEstimate);
-
-    //     DogLog.log("Subsystems/Vision/" + m_limeLightName + "/MT1/StdDev Factors/Num Tags", poseEstimate.tagCount);
-    //     DogLog.log("Subsystems/Vision/" + m_limeLightName + "/MT1/StdDev Factors/Average Distance", avgDist);
-    //     DogLog.log("Subsystems/Vision/" + m_limeLightName + "/MT1/StdDev Factors/Average Ambiguity", avgAmbiguity);
-
-    //     // Start with base std devs (multi-tag assumed since single tags are rejected)
-    //     var estStdDevs = VisionConstants.kBaseStdDevsMT1;
-
-    //     // Scale by ambiguity and distance factors
-    //     estStdDevs = estStdDevs.times((1 + avgAmbiguity) * 5);
-    //     estStdDevs = estStdDevs.times(1 + (avgDist * avgDist / 30));
-
-    //     return estStdDevs;
-    // }
-
-        /**
-     * Calculate the standard deviations for the MegaTag1 pose estimation based on number of tags, average distance and average ambiguity.
-     * Poses are already filtered by pose rejection, so this only scales std devs for accepted poses.
-     */
-    public Matrix<N3, N1> getMegaTag1StdDevs(PoseEstimate poseEstimate) {
-
-        double avgDist = poseEstimate.avgTagDist;
         // Calculate standard deviations
-        double stdDevFactor = Math.pow(avgDist, 2.0) / poseEstimate.tagCount;
-
-        double angularStdDev = VisionConstants.angularStdDevBaseline * stdDevFactor;
-
-
-        return VecBuilder.fill(Double.MAX_VALUE, Double.MAX_VALUE, angularStdDev);
-    }
-
-    /**
-     * Calculate dynamic standard deviations for pose estimation based on multiple factors.
-     */
-    private Matrix<N3, N1> calculateStdDevsMT2(PoseEstimate poseEstimate, Pose2d pose) {
-
-        double avgDist = poseEstimate.avgTagDist;
-        // Calculate standard deviations
-        double stdDevFactor = Math.pow(avgDist, 2.0) / poseEstimate.tagCount;
-
-        double linearStdDev = VisionConstants.linearStdDevBaseline * stdDevFactor;
-
-        linearStdDev *= VisionConstants.linearStdDevMegatag2Factor;
-
-        return VecBuilder.fill(linearStdDev, linearStdDev, Double.MAX_VALUE);
-        
-    }
-
-    /**
-     * Calculate average ambiguity from Limelight pose estimate.
-     */
-    private double getAmbiguity(PoseEstimate poseEstimate) {
-        double totalAmbiguity = 0;
-        for (var fiducial : poseEstimate.rawFiducials) {
-            totalAmbiguity += fiducial.ambiguity;
+        double stdDevFactor =
+            Math.pow(observation.averageTagDistance(), 2.0) / observation.tagCount();
+        double linearStdDev = linearStdDevBaseline * stdDevFactor;
+        double angularStdDev = angularStdDevBaseline * stdDevFactor;
+        if (observation.type() == PoseObservationType.MEGATAG_1) {
+          linearStdDev *= linearStdDevMegatag2Factor;
+          angularStdDev *= angularStdDevMegatag2Factor;
         }
-        return totalAmbiguity / poseEstimate.rawFiducials.length;
+        if (cameraIndex < cameraStdDevFactors.length) {
+          linearStdDev *= cameraStdDevFactors[cameraIndex];
+          angularStdDev *= cameraStdDevFactors[cameraIndex];
+        }
+
+        // Send vision observation
+        consumer.accept(
+            observation.pose().toPose2d(),
+            observation.timestamp(),
+            VecBuilder.fill(linearStdDev, linearStdDev, angularStdDev));
+      }
+
+      // Log camera metadata
+      Logger.recordOutput(
+          "Vision/Camera" + Integer.toString(cameraIndex) + "/TagPoses",
+          tagPoses.toArray(new Pose3d[0]));
+      Logger.recordOutput(
+          "Vision/Camera" + Integer.toString(cameraIndex) + "/RobotPoses",
+          robotPoses.toArray(new Pose3d[0]));
+      Logger.recordOutput(
+          "Vision/Camera" + Integer.toString(cameraIndex) + "/RobotPosesAccepted",
+          robotPosesAccepted.toArray(new Pose3d[0]));
+      Logger.recordOutput(
+          "Vision/Camera" + Integer.toString(cameraIndex) + "/RobotPosesRejected",
+          robotPosesRejected.toArray(new Pose3d[0]));
+      allTagPoses.addAll(tagPoses);
+      allRobotPoses.addAll(robotPoses);
+      allRobotPosesAccepted.addAll(robotPosesAccepted);
+      allRobotPosesRejected.addAll(robotPosesRejected);
     }
 
+    // Log summary data
+    Logger.recordOutput("Vision/Summary/TagPoses", allTagPoses.toArray(new Pose3d[0]));
+    Logger.recordOutput("Vision/Summary/RobotPoses", allRobotPoses.toArray(new Pose3d[0]));
+    Logger.recordOutput(
+        "Vision/Summary/RobotPosesAccepted", allRobotPosesAccepted.toArray(new Pose3d[0]));
+    Logger.recordOutput(
+        "Vision/Summary/RobotPosesRejected", allRobotPosesRejected.toArray(new Pose3d[0]));
+  }
+
+  @FunctionalInterface
+  public static interface VisionConsumer {
+    public void accept(
+        Pose2d visionRobotPoseMeters,
+        double timestampSeconds,
+        Matrix<N3, N1> visionMeasurementStdDevs);
+  }
 }
