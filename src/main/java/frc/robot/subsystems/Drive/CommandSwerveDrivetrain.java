@@ -11,6 +11,7 @@ import com.ctre.phoenix6.swerve.SwerveDrivetrainConstants;
 import com.ctre.phoenix6.swerve.SwerveModuleConstants;
 import com.ctre.phoenix6.swerve.SwerveRequest;
 
+import dev.doglog.DogLog;
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
@@ -27,6 +28,7 @@ import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
 import frc.robot.generated.TunerConstants.TunerSwerveDrivetrain;
 import frc.robot.subsystems.Vision.Vision;
 import frc.robot.subsystems.Vision.VisionConstants;
+import frc.robot.util.LimelightHelpers;
 
 /**
  * Class that extends the Phoenix 6 SwerveDrivetrain class and implements
@@ -242,6 +244,18 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
                 m_hasAppliedOperatorPerspective = true;
             });
         }
+
+        DogLog.log("Subsystems/Drive/Pose2d", getState().Pose);
+
+        // if (DriverStation.isDisabled()) {
+        //     LimelightHelpers.SetIMUMode("limelight-left", 1);
+        //     LimelightHelpers.SetIMUMode("limelight-front", 1);
+        // }else{
+        //     LimelightHelpers.SetIMUMode("limelight-left", 4);
+        //     LimelightHelpers.SetIMUMode("limelight-front", 4);
+        // }
+
+
 
 
     }
