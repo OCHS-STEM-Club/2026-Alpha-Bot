@@ -2,10 +2,10 @@
   "robot_length_meters": 0.864,
   "robot_width_meters": 0.864,
   "default_max_velocity_meters_per_sec": 2.0,
-  "default_max_acceleration_meters_per_sec2": 4.0,
+  "default_max_acceleration_meters_per_sec2": 0.5,
   "default_intermediate_handoff_radius_meters": 0.2,
   "default_max_velocity_deg_per_sec": 540.0,
-  "default_max_acceleration_deg_per_sec2": 860.0,
+  "default_max_acceleration_deg_per_sec2": 600.0,
   "default_end_translation_tolerance_meters": 0.03,
-  "default_end_rotation_tolerance_deg": 2.0
+  "default_end_rotation_tolerance_deg": 5.0
 }

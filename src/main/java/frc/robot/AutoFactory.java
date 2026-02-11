@@ -20,9 +20,9 @@ public class AutoFactory extends SubsystemBase{
 
     private CommandSwerveDrivetrain m_swerveSubsystem;
 
-    private PIDController translationController = new PIDController(0.1, 0.0, 0.0);
-    private PIDController rotationController = new PIDController(0.4, 0.0, 0.05);
-    private PIDController crossTrackController = new PIDController(0.1, 0.0, 0.0);
+    private PIDController translationController = new PIDController(0.2, 0.0, 0.0);
+    private PIDController rotationController = new PIDController(0.3, 0.0, 0.0);
+    private PIDController crossTrackController = new PIDController(0.0, 0.0, 0.0);
     
 
     private SwerveRequest.ApplyRobotSpeeds m_driveRequest = new ApplyRobotSpeeds()
@@ -31,6 +31,8 @@ public class AutoFactory extends SubsystemBase{
     private FollowPath.Builder pathBuilder;
 
     private final SwerveRequest.PointWheelsAt point = new SwerveRequest.PointWheelsAt();
+
+    private final SwerveRequest.SwerveDriveBrake brake = new SwerveRequest.SwerveDriveBrake();
 
     public AutoFactory(CommandSwerveDrivetrain swerveSubsystem) {
         m_swerveSubsystem = swerveSubsystem;
@@ -59,17 +61,43 @@ public class AutoFactory extends SubsystemBase{
         );
     }
 
-    public Command getSandboxAuto(){
-        Path firstPath = new Path("neutral");
-        Rotation2d initialDirection = firstPath.getInitialModuleDirection();
+    public Command getTranslationTuningAuto(){
+        Path TranslationTuningPath = new Path("TranslationTuning");
+        Rotation2d initialDirection = TranslationTuningPath.getInitialModuleDirection();
 
         m_swerveSubsystem.applyRequest(() ->
             point.withModuleDirection(initialDirection));
         
         return Commands.sequence(
-            pathBuilder.build(firstPath)
+            pathBuilder.build(TranslationTuningPath)
         );
     }
+
+    public Command getRotationTuningAuto(){
+        Path RotationTuningPath = new Path("RotationTuning");
+        Rotation2d initialDirection = RotationTuningPath.getInitialModuleDirection();
+
+        m_swerveSubsystem.applyRequest(() ->
+            point.withModuleDirection(initialDirection));
+        
+        return Commands.sequence(
+            pathBuilder.build(RotationTuningPath)
+        );
+    }
+
+    public Command getNeutralAuto(){
+        Path RotationTuningPath = new Path("neutral");
+        Rotation2d initialDirection = RotationTuningPath.getInitialModuleDirection();
+
+        m_swerveSubsystem.applyRequest(() ->
+            point.withModuleDirection(initialDirection));
+        
+        return Commands.sequence(
+            pathBuilder.build(RotationTuningPath)
+        );
+    }
+
+
 
     @Override
     public void periodic(){

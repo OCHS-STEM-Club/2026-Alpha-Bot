@@ -57,7 +57,6 @@ public class RobotContainer {
 
         autoChooser.addOption("Straight Auto", autoFactory.getStraightAuto());
         autoChooser.setDefaultOption("None", Commands.none());
-        autoChooser.addOption("sandbox", autoFactory.getSandboxAuto());
 
         SmartDashboard.putData("Auto Chooser", autoChooser);
 
@@ -95,7 +94,9 @@ public class RobotContainer {
 
         drivetrain.registerTelemetry(logger::telemeterize);
 
-        joystick.b().whileTrue(autoFactory.getSandboxAuto());
+        joystick.b().whileTrue(autoFactory.getStraightAuto());
+
+        joystick.y().whileTrue(autoFactory.getTranslationTuningAuto());
 
     }
 
