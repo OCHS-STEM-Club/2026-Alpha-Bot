@@ -95,6 +95,8 @@ public class RobotContainer {
 
         drivetrain.registerTelemetry(logger::telemeterize);
 
+        joystick.b().whileTrue(autoFactory.getSandboxAuto());
+
     }
 
     public Command getAutonomousCommand() {

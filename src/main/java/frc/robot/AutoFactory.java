@@ -21,8 +21,8 @@ public class AutoFactory extends SubsystemBase{
     private CommandSwerveDrivetrain m_swerveSubsystem;
 
     private PIDController translationController = new PIDController(0.1, 0.0, 0.0);
-    private PIDController rotationController = new PIDController(2.0, 0.0, 0.0);
-    private PIDController crossTrackController = new PIDController(0.5, 0.0, 0.0);
+    private PIDController rotationController = new PIDController(0.4, 0.0, 0.05);
+    private PIDController crossTrackController = new PIDController(0.1, 0.0, 0.0);
     
 
     private SwerveRequest.ApplyRobotSpeeds m_driveRequest = new ApplyRobotSpeeds()
