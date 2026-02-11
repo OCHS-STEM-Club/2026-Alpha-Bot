@@ -135,6 +135,10 @@ public class Vision extends SubsystemBase {
           angularStdDev *= cameraStdDevFactors[cameraIndex];
         }
 
+        if (observation.type() == PoseObservationType.MEGATAG_1) {
+          linearStdDev *= Double.MAX_VALUE;
+        }
+
         // Send vision observation
         consumer.accept(
             observation.pose().toPose2d(),

@@ -14,6 +14,8 @@ import com.ctre.phoenix6.HootAutoReplay;
 import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
+import frc.robot.subsystems.Drive.CommandSwerveDrivetrain;
+import frc.robot.util.LimelightHelpers;
 
 public class Robot extends LoggedRobot {
     private Command m_autonomousCommand;
@@ -53,7 +55,10 @@ public class Robot extends LoggedRobot {
     public void disabledInit() {}
 
     @Override
-    public void disabledPeriodic() {}
+    public void disabledPeriodic() {
+        LimelightHelpers.SetIMUMode("limelight-front", 1); //seeding
+        LimelightHelpers.SetIMUMode("limelight-left", 1); //seeding
+    }
 
     @Override
     public void disabledExit() {}
@@ -68,7 +73,15 @@ public class Robot extends LoggedRobot {
     }
 
     @Override
-    public void autonomousPeriodic() {}
+    public void autonomousPeriodic() {
+        if(m_robotContainer.drivetrain.notRotating()){
+            LimelightHelpers.SetIMUMode("limelight-front", 1); //seeding
+            LimelightHelpers.SetIMUMode("limelight-left", 1); //seeding
+        }else{
+            LimelightHelpers.SetIMUMode("limelight-front", 2); 
+            LimelightHelpers.SetIMUMode("limelight-left", 2); 
+        }
+    }
 
     @Override
     public void autonomousExit() {}
@@ -81,7 +94,15 @@ public class Robot extends LoggedRobot {
     }
 
     @Override
-    public void teleopPeriodic() {}
+    public void teleopPeriodic() {
+        if(m_robotContainer.drivetrain.notRotating()){
+            LimelightHelpers.SetIMUMode("limelight-front", 1); //seeding
+            LimelightHelpers.SetIMUMode("limelight-left", 1); //seeding
+        }else{
+            LimelightHelpers.SetIMUMode("limelight-front", 2); 
+            LimelightHelpers.SetIMUMode("limelight-left", 2); 
+        }
+    }
 
     @Override
     public void teleopExit() {}
