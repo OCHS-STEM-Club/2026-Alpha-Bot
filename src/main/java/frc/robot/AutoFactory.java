@@ -60,7 +60,7 @@ public class AutoFactory extends SubsystemBase{
     }
 
     public Command getSandboxAuto(){
-        Path firstPath = new Path("sandbox");
+        Path firstPath = new Path("neutral");
         Rotation2d initialDirection = firstPath.getInitialModuleDirection();
 
         m_swerveSubsystem.applyRequest(() ->
