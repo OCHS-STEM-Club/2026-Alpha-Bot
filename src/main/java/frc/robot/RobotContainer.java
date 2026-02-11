@@ -44,10 +44,6 @@ public class RobotContainer {
 
     private Vision vision;
 
-    /* Path follower */
-    private final AutoFactory autoFactory;
-    private final AutoRoutines autoRoutines;
-    private final AutoChooser autoChooser = new AutoChooser();
 
 
     public RobotContainer() {
@@ -55,13 +51,6 @@ public class RobotContainer {
                     drivetrain::addVisionMeasurement,
                     new VisionIOLimelight(VisionConstants.camera0Name, () -> drivetrain.getState().Pose.getRotation()),
                     new VisionIOLimelight(VisionConstants.camera1Name, () -> drivetrain.getState().Pose.getRotation()));
-
-
-        autoFactory = drivetrain.createAutoFactory();
-        autoRoutines = new AutoRoutines(autoFactory);
-
-        autoChooser.addRoutine("SimplePath", autoRoutines::simplePathAuto);
-        SmartDashboard.putData("Auto Chooser", autoChooser);
 
 
         configureBindings();
@@ -99,6 +88,6 @@ public class RobotContainer {
     }
 
     public Command getAutonomousCommand() {
-        return autoChooser.selectedCommand();
+        return null;
     }
 }
