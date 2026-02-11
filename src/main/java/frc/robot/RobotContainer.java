@@ -11,8 +11,7 @@ import com.ctre.phoenix6.swerve.SwerveRequest;
 import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.commands.FollowPathCommand;
 
-import choreo.auto.AutoChooser;
-import choreo.auto.AutoFactory;
+
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
@@ -44,6 +43,10 @@ public class RobotContainer {
 
     private Vision vision;
 
+    private SendableChooser<Command> autoChooser = new SendableChooser<>();
+
+    private AutoFactory autoFactory = new AutoFactory(drivetrain);
+
 
 
     public RobotContainer() {
@@ -51,6 +54,13 @@ public class RobotContainer {
                     drivetrain::addVisionMeasurement,
                     new VisionIOLimelight(VisionConstants.camera0Name, () -> drivetrain.getState().Pose.getRotation()),
                     new VisionIOLimelight(VisionConstants.camera1Name, () -> drivetrain.getState().Pose.getRotation()));
+
+        autoChooser.addOption("Straight Auto", autoFactory.getStraightAuto());
+        autoChooser.setDefaultOption("None", Commands.none());
+        autoChooser.addOption("sandbox", autoFactory.getSandboxAuto());
+
+        SmartDashboard.putData("Auto Chooser", autoChooser);
+
 
 
         configureBindings();
@@ -88,6 +98,6 @@ public class RobotContainer {
     }
 
     public Command getAutonomousCommand() {
-        return null;
+        return autoChooser.getSelected();
     }
 }
