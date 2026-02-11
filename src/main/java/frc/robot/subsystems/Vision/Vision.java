@@ -22,6 +22,7 @@ import frc.robot.subsystems.Vision.VisionIOInputsAutoLogged;
 
 import static frc.robot.subsystems.Vision.VisionConstants.*;
 
+import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import org.littletonrobotics.junction.Logger;
@@ -72,6 +73,9 @@ public class Vision extends SubsystemBase {
     List<Pose3d> allRobotPoses = new LinkedList<>();
     List<Pose3d> allRobotPosesAccepted = new LinkedList<>();
     List<Pose3d> allRobotPosesRejected = new LinkedList<>();
+
+    // Collect all valid observations from all cameras
+    List<CameraObservation> allValidObservations = new ArrayList<>();
 
     // Loop over cameras
     for (int cameraIndex = 0; cameraIndex < io.length; cameraIndex++) {
@@ -139,11 +143,10 @@ public class Vision extends SubsystemBase {
           linearStdDev *= Double.MAX_VALUE;
         }
 
-        // Send vision observation
-        consumer.accept(
-            observation.pose().toPose2d(),
-            observation.timestamp(),
-            VecBuilder.fill(linearStdDev, linearStdDev, angularStdDev));
+        // Store observation for later processing
+        allValidObservations.add(
+            new CameraObservation(
+                cameraIndex, observation, linearStdDev, angularStdDev));
       }
 
       // Log camera metadata
@@ -165,6 +168,36 @@ public class Vision extends SubsystemBase {
       allRobotPosesRejected.addAll(robotPosesRejected);
     }
 
+    // Find the camera with the closest observation this cycle
+    int selectedCameraIndex = -1;
+    double closestDistance = Double.MAX_VALUE;
+    for (var cameraObs : allValidObservations) {
+      if (cameraObs.observation.averageTagDistance() < closestDistance) {
+        closestDistance = cameraObs.observation.averageTagDistance();
+        selectedCameraIndex = cameraObs.cameraIndex;
+      }
+    }
+
+    // Send only observations from the selected camera to the consumer
+    int observationCount = 0;
+    if (selectedCameraIndex >= 0) {
+      for (var cameraObs : allValidObservations) {
+        if (cameraObs.cameraIndex == selectedCameraIndex) {
+          consumer.accept(
+              cameraObs.observation.pose().toPose2d(),
+              cameraObs.observation.timestamp(),
+              VecBuilder.fill(
+                  cameraObs.linearStdDev, cameraObs.linearStdDev, cameraObs.angularStdDev));
+          observationCount++;
+        }
+      }
+    }
+
+    // Log which camera was selected
+    Logger.recordOutput("Vision/SelectedCamera", selectedCameraIndex);
+    Logger.recordOutput("Vision/SelectedCameraDistance", closestDistance);
+    Logger.recordOutput("Vision/SelectedCameraObservationCount", observationCount);
+
     // Log summary data
     Logger.recordOutput("Vision/Summary/TagPoses", allTagPoses.toArray(new Pose3d[0]));
     Logger.recordOutput("Vision/Summary/RobotPoses", allRobotPoses.toArray(new Pose3d[0]));
@@ -181,4 +214,11 @@ public class Vision extends SubsystemBase {
         double timestampSeconds,
         Matrix<N3, N1> visionMeasurementStdDevs);
   }
+
+  /** Helper class to store observation data from a camera. */
+  private static record CameraObservation(
+      int cameraIndex,
+      VisionIO.PoseObservation observation,
+      double linearStdDev,
+      double angularStdDev) {}
 }
