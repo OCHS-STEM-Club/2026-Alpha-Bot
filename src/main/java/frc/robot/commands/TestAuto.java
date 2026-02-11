@@ -25,7 +25,7 @@ public class TestAuto extends SequentialCommandGroup {
     this.m_pathingFactory = pathingFactory;
     this.m_swerveSubsystem = swerveSubsystem;
     addCommands(
-      m_pathingFactory.driveToPose(new Pose2d(6.355, 7.322, Rotation2d.fromDegrees(0))) 
+      m_pathingFactory.driveToPose(new Pose2d(1.965, 1.2, Rotation2d.fromDegrees(0))) 
     );
   }
 }

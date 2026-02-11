@@ -23,11 +23,11 @@ public class PathingFactory extends SubsystemBase{
     .withDriveRequestType(DriveRequestType.Velocity)
     .withForwardPerspective(ForwardPerspectiveValue.BlueAlliance);
 
-    private PIDController xController = new PIDController(
+    public PIDController xController = new PIDController(
         PathingConstants.kP_X,
         PathingConstants.kI_X,
         PathingConstants.kD_X);
-    private PIDController yController = new PIDController(
+    public PIDController yController = new PIDController(
         PathingConstants.kP_Y,
         PathingConstants.kI_Y,
         PathingConstants.kD_Y); 
@@ -43,8 +43,9 @@ public class PathingFactory extends SubsystemBase{
         alignAngleRequest.HeadingController.setP(PathingConstants.kP_THETA);
         alignAngleRequest.HeadingController.setTolerance(Units.degreesToRadians(PathingConstants.kPositionTolerance_Theta), Units.degreesToRadians(PathingConstants.kVelocityTolerance_Theta));
 
-        xController.setTolerance(PathingConstants.kErrorTolerance_X, PathingConstants.kErrorToleranceDerivative_X);
-        yController.setTolerance(PathingConstants.kErrorTolerance_Y, PathingConstants.kErrorToleranceDerivative_Y);
+        xController.setTolerance(PathingConstants.kErrorTolerance_X);
+        yController.setTolerance(PathingConstants.kErrorTolerance_Y);
+
 
         return m_SwerveSubsystem.applyRequest(()-> {
             Pose2d currentPose = m_SwerveSubsystem.getState().Pose;
