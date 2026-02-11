@@ -178,10 +178,11 @@ public class Vision extends SubsystemBase {
       }
     }
 
-    // Send only observations from the selected camera to the consumer
+    // Send only observations from the selected camera to the consumer (max 10 per cycle)
     int observationCount = 0;
     if (selectedCameraIndex >= 0) {
       for (var cameraObs : allValidObservations) {
+        if (observationCount >= 10) break;
         if (cameraObs.cameraIndex == selectedCameraIndex) {
           consumer.accept(
               cameraObs.observation.pose().toPose2d(),

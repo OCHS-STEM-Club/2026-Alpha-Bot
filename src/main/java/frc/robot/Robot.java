@@ -9,8 +9,6 @@ import org.littletonrobotics.junction.Logger;
 import org.littletonrobotics.junction.networktables.NT4Publisher;
 import org.littletonrobotics.junction.wpilog.WPILOGWriter;
 
-import com.ctre.phoenix6.HootAutoReplay;
-
 import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
@@ -22,23 +20,11 @@ public class Robot extends LoggedRobot {
 
     private final RobotContainer m_robotContainer;
 
-    /* log and replay timestamp and joystick data */
-    private final HootAutoReplay m_timeAndJoystickReplay = new HootAutoReplay()
-        .withTimestampReplay()
-        .withJoystickReplay();
-
     public Robot() {
-        Logger.recordMetadata("ProjectName", "MyProject"); // Set a metadata value
+        Logger.recordMetadata("Alpha-Bot", "MyProject"); // Set a metadata value
 
-        // if (isReal()) {
             Logger.addDataReceiver(new WPILOGWriter()); // Log to a USB stick ("/U/logs")
             Logger.addDataReceiver(new NT4Publisher()); // Publish data to NetworkTables
-        // } else {
-        //     setUseTiming(false); // Run as fast as possible
-        //     String logPath = LogFileUtil.findReplayLog(); // Pull the replay log from AdvantageScope (or prompt the user)
-        //     Logger.setReplaySource(new WPILOGReader(logPath)); // Read replay log
-        //     Logger.addDataReceiver(new WPILOGWriter(LogFileUtil.addPathSuffix(logPath, "_sim"))); // Save outputs to a new log
-        // }
 
         Logger.start(); // Start logging! No more data receivers, replay sources, or metadata values may be added.
 
@@ -47,8 +33,7 @@ public class Robot extends LoggedRobot {
 
     @Override
     public void robotPeriodic() {
-        m_timeAndJoystickReplay.update();
-        CommandScheduler.getInstance().run(); 
+        CommandScheduler.getInstance().run();
     }
 
     @Override
