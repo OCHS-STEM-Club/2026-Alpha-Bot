@@ -2,6 +2,8 @@ package frc.robot;
 
 import static edu.wpi.first.units.Units.Rotation;
 
+import org.littletonrobotics.junction.Logger;
+
 import com.ctre.phoenix6.swerve.SwerveModule.DriveRequestType;
 import com.ctre.phoenix6.swerve.SwerveModule.SteerRequestType;
 import com.ctre.phoenix6.swerve.SwerveRequest;
@@ -21,14 +23,14 @@ public class AutoFactory extends SubsystemBase{
 
     private CommandSwerveDrivetrain m_swerveSubsystem;
 
-    private PIDController translationController = new PIDController(2, 0.0, 0.0);
-    private PIDController rotationController = new PIDController(5.0, 0.0, 0.0);
-    private PIDController crossTrackController = new PIDController(5.0, 0.0, 0.0);
+    private PIDController translationController = new PIDController(1.5, 0.0, 0.0);
+    private PIDController rotationController = new PIDController(2.5, 0.0, 0.0);
+    private PIDController crossTrackController = new PIDController(1, 0.0, 0.0);
     
 
-    private ApplyRobotSpeeds m_driveRequest = new ApplyRobotSpeeds()
-    .withDriveRequestType(DriveRequestType.OpenLoopVoltage)
-    .withDesaturateWheelSpeeds(true);
+    private ApplyRobotSpeeds m_driveRequest = new ApplyRobotSpeeds();
+    // .withDriveRequestType(DriveRequestType.OpenLoopVoltage)
+    // .withDesaturateWheelSpeeds(true);
 
     private FollowPath.Builder pathBuilder;
 
@@ -91,6 +93,18 @@ public class AutoFactory extends SubsystemBase{
 
         m_swerveSubsystem.applyRequest(() ->
             point.withModuleDirection(initialDirection));
+
+        FollowPath.setPoseLoggingConsumer(pair -> {
+            Logger.recordOutput(pair.getFirst(), pair.getSecond());
+        });
+
+        FollowPath.setTranslationListLoggingConsumer(pair -> {
+            Logger.recordOutput(pair.getFirst(), pair.getSecond());
+        });
+
+        FollowPath.setDoubleLoggingConsumer(pair -> {
+            Logger.recordOutput(pair.getFirst(), pair.getSecond());
+        });
         
         return Commands.sequence(
             pathBuilder.build(RotationTuningPath)
