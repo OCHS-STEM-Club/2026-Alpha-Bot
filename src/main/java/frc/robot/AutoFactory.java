@@ -3,6 +3,7 @@ package frc.robot;
 import static edu.wpi.first.units.Units.Rotation;
 
 import com.ctre.phoenix6.swerve.SwerveModule.DriveRequestType;
+import com.ctre.phoenix6.swerve.SwerveModule.SteerRequestType;
 import com.ctre.phoenix6.swerve.SwerveRequest;
 import com.ctre.phoenix6.swerve.SwerveRequest.ApplyRobotSpeeds;
 
@@ -20,19 +21,18 @@ public class AutoFactory extends SubsystemBase{
 
     private CommandSwerveDrivetrain m_swerveSubsystem;
 
-    private PIDController translationController = new PIDController(0.2, 0.0, 0.0);
-    private PIDController rotationController = new PIDController(0.3, 0.0, 0.0);
-    private PIDController crossTrackController = new PIDController(0.0, 0.0, 0.0);
+    private PIDController translationController = new PIDController(2, 0.0, 0.0);
+    private PIDController rotationController = new PIDController(5.0, 0.0, 0.0);
+    private PIDController crossTrackController = new PIDController(5.0, 0.0, 0.0);
     
 
-    private SwerveRequest.ApplyRobotSpeeds m_driveRequest = new ApplyRobotSpeeds()
-    .withDriveRequestType(DriveRequestType.Velocity);
+    private ApplyRobotSpeeds m_driveRequest = new ApplyRobotSpeeds()
+    .withDriveRequestType(DriveRequestType.OpenLoopVoltage)
+    .withDesaturateWheelSpeeds(true);
 
     private FollowPath.Builder pathBuilder;
 
     private final SwerveRequest.PointWheelsAt point = new SwerveRequest.PointWheelsAt();
-
-    private final SwerveRequest.SwerveDriveBrake brake = new SwerveRequest.SwerveDriveBrake();
 
     public AutoFactory(CommandSwerveDrivetrain swerveSubsystem) {
         m_swerveSubsystem = swerveSubsystem;
@@ -41,7 +41,7 @@ public class AutoFactory extends SubsystemBase{
                 m_swerveSubsystem,
                 () -> m_swerveSubsystem.getState().Pose,
                 () -> m_swerveSubsystem.getState().Speeds,
-                speeds -> m_swerveSubsystem.setControl(m_driveRequest.withSpeeds(speeds)),
+                (speeds) -> m_swerveSubsystem.setControl(m_driveRequest.withSpeeds(speeds)),
                 translationController,
                 rotationController,
                 crossTrackController
