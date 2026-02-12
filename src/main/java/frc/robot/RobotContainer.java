@@ -57,7 +57,7 @@ public class RobotContainer {
 
         autoChooser.addOption("Straight Auto", autoFactory.getStraightAuto());
         autoChooser.setDefaultOption("None", Commands.none());
-        autoChooser.addOption("Neutral", autoFactory.getNeutralAuto());
+        autoChooser.addOption("RightIntakeNeutral", autoFactory.getNeutralAuto());
 
         SmartDashboard.putData("Auto Chooser", autoChooser);
 

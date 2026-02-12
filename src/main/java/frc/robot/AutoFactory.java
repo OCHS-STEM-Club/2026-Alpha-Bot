@@ -23,13 +23,13 @@ public class AutoFactory extends SubsystemBase{
 
     private CommandSwerveDrivetrain m_swerveSubsystem;
 
-    private PIDController translationController = new PIDController(1.5, 0.0, 0.0);
+    private PIDController translationController = new PIDController(5.3, 0.0, 0.0);
     private PIDController rotationController = new PIDController(2.5, 0.0, 0.0);
     private PIDController crossTrackController = new PIDController(1, 0.0, 0.0);
     
 
-    private ApplyRobotSpeeds m_driveRequest = new ApplyRobotSpeeds();
-    // .withDriveRequestType(DriveRequestType.OpenLoopVoltage)
+    private ApplyRobotSpeeds m_driveRequest = new ApplyRobotSpeeds()
+    .withDriveRequestType(DriveRequestType.OpenLoopVoltage);
     // .withDesaturateWheelSpeeds(true);
 
     private FollowPath.Builder pathBuilder;
@@ -48,6 +48,9 @@ public class AutoFactory extends SubsystemBase{
                 rotationController,
                 crossTrackController
             ).withDefaultShouldFlip();
+
+
+        FollowPath.registerEventTrigger("Intake", Commands.print("Intake Running"));
     }
 
 
@@ -88,11 +91,27 @@ public class AutoFactory extends SubsystemBase{
     }
 
     public Command getNeutralAuto(){
-        Path RotationTuningPath = new Path("neutral");
-        Rotation2d initialDirection = RotationTuningPath.getInitialModuleDirection();
+        Path RightIntakePath = new Path("RightIntakeNeutral");
+        Path RightReturnToShootPath = new Path("RightReturnToShoot");
+        Rotation2d initialDirection = RightIntakePath.getInitialModuleDirection();
 
         m_swerveSubsystem.applyRequest(() ->
             point.withModuleDirection(initialDirection));
+        
+        return Commands.sequence(
+            pathBuilder.build(RightIntakePath),
+            pathBuilder.build(RightReturnToShootPath)
+
+        );
+    }
+
+
+
+    @Override
+    public void periodic(){
+        SmartDashboard.putData("Auto Translation Controller", translationController);
+        SmartDashboard.putData("Auto Rotation Controller", rotationController);
+        SmartDashboard.putData("Auto Cross Track Controller", crossTrackController);
 
         FollowPath.setPoseLoggingConsumer(pair -> {
             Logger.recordOutput(pair.getFirst(), pair.getSecond());
@@ -105,18 +124,5 @@ public class AutoFactory extends SubsystemBase{
         FollowPath.setDoubleLoggingConsumer(pair -> {
             Logger.recordOutput(pair.getFirst(), pair.getSecond());
         });
-        
-        return Commands.sequence(
-            pathBuilder.build(RotationTuningPath)
-        );
-    }
-
-
-
-    @Override
-    public void periodic(){
-        SmartDashboard.putData("Auto Translation Controller", translationController);
-        SmartDashboard.putData("Auto Rotation Controller", rotationController);
-        SmartDashboard.putData("Auto Cross Track Controller", crossTrackController);
     }
 }
